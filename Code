@@ -1,0 +1,650 @@
+
+
+from IPython.core.display import display, HTML
+display(HTML("<style>.container { width:100% !important; }</style>"))
+Topic : Predicting co2 emission in all over world on the basis of GDP for World and world population
+Notebook Content¶
+Abstract
+Introduction
+Research Questions
+1.Websites for fetching the Data
+2. Importing Libraries
+3..Scrapping the world population from the following url.
+4. Fetching Data From GDP Website
+4.1) Research paper For GDP and co2 emission relationship
+4.2) Data Wrangling for GDP table
+5) Fetching data for Co2 Emission
+5.1) Data Wrangling of Co2 emission
+6) Merging Of DataFrames
+7)Regex function
+8) Final Dataframe
+9) Visualizations
+10) Regressions
+10.1) Linear regression
+10.2) Multilinear regression
+10.3) Polynnomial regression
+10.4) Knn Regression
+11) Conclusion
+
+Abstract
+This notebook is going to perform Web Scraping, Merging of the various dataframes and perform some regression method on the final dataframe.
+In this notebook the following Datasets are uploaded i.e) World population, Gross Domestic Product of World and Carbon dioxide emission all over the world with the following years.
+The prediction of emission of carbon dioxide due to increasing population and Gross domestic Product is performed in this notebook. There is research that the increasing population and Gross Domestic Product leads to increasing carbon dioxide (4.1).
+
+Introduction
+In todays time the one of the most problematic thing in the world is the increasing pollution and because of that global warming gets triggered. There is a study said to be that the increasing population in the world leads to the increasing temeperature. One of the research alsomentions that because of increasing population the Gross domestic product(GDP) also increases which also leads to the increasing pollution. in this notebook we are going to predict the co2 emisiion i.e growth with the population table and GDP table.
+Firstly we are gonna scrap the population website and make a dataframe for number of years. In that dataframe we can see the no of population that is rising year by year in the numeric format.
+After that we are going to fetch the data for the gdp from the following URL, where we can see the gdp growth according to the year and the gdp calculation revenue for the number of years of entire world.
+The Website that we are going to scrap includes co2 emission table that gives the data of the entire world emission for the following years that are mentioned. From these websites tables we are going to drop the unwanted tables for clear defining and renaming the columns for the better understanding and for easy implementation.
+
+After fetching the need data we are going to merge the dataframe from the 'Year' column so it will be easy to analyze the data as per the year.
+we are going to visualize the dataframe in the form of graph so we can get enough information on which data is more related to another data.
+
+The various regression technique is applied to the final dataframe for prediction answer that is R square. R square will be important input that we are going to get after regression technique.
+
+
+Research Questions
+Increasing of Co2 emission due to GDP?
+Increasing of Co2 emission due to population?
+Linear Regression on GDP or population which one effect more on Co2 emission?
+
+1. Websites for fetching the Data
+Predicting the co2 emission from all over the world from the increasing population and increasing Gdp.
+
+Increasing Population --> increasing Gdp --> increasing co2 emission -----or else ------increasing Population --> increasing co2 emission ----- or else ---- increasing Gdp --> increasing co2 emission
+1.1) *World population Website
+*Data for World Population fetched from the following website:
+(https://www.worldometers.info/world-population/world-population-by-year/)
+From this site we are going to collect the world population in numeric for comparison.
+
+1.2) *Gross Domestic Product (GDP) Website
+*Data for Gross Domestic Product fetched from the following website:
+(https://www.worldometers.info/gdp/) From this site we are going to collect the Gdp for the Whole World in numeric for comparison.
+There is a research for the Gdp and co2 where it explains the emission of carbon dioxide due to increasing GDP. This research paper is attached to the GDP Content.
+
+
+1.3) *Co2 emission Website
+*Data for co2 emission from all over the world from the following years fetched from the following website:
+(https://www.worldometers.info/co2-emissions/) From this site we are going to collect the co2 emission from the following years in numeric format and percapita table.
+There is a research for the Gdp and co2 where it explains the emission of carbon dioxide due to increasing GDP. This research paper is attached to the GDP Content.
+
+
+2. Importing of Libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import json
+import requests                 # Python imports the Webpages 
+from bs4 import BeautifulSoup 
+import pprint as pp
+import re
+import statsmodels.formula.api as smf
+from time import sleep
+from datetime import datetime
+from pylab import rcParams
+from sklearn.neighbors import KNeighborsRegressor
+%%HTML
+<style type="text/css">                                                          
+table.dataframe td, table.dataframe th {
+    border: 1px  black solid !important;
+  color: black !important;
+}
+</style>
+
+3. Scrapping the world population from the following url.
+https://www.worldometers.info/world-population/world-population-by-year/
+
+Below Requesting the website for world population:
+
+url_population = "https://www.worldometers.info/world-population/world-population-by-year/"
+response = requests.get(url_population)          # request the website
+scraping = BeautifulSoup(response.text,'lxml')
+response          # Response should be 200 for prefect implementation
+<Response [200]>
+From the above code we get the response 200, this means the website request is successfull and we can proceed with our further fetching of the data from the website.
+
+#element = scraping.find("div",attrs = {"class":"content-inner"})                
+#element
+#print(element.prettify())                  #In BeautifulSoup, the Prettify() method would enable us to show how the tags are nested in the text.
+Fetching the title of the Web page
+
+h1 = scraping.find(name='h1') # Find the 'h1' element inside of the 'body' tag
+h1
+<h1>World Population by Year</h1>
+Fetching the data for the world population from the requested URL by selecting the td and attr = style : font-weight: bold; text-align:right
+
+element_population_no = scraping.findAll("td", attrs = {"style" : "font-weight: bold; text-align:right"})
+element_population_no[:5]
+[<td style="font-weight: bold; text-align:right">7,713,468,100</td>,
+ <td style="font-weight: bold; text-align:right">7,631,091,040</td>,
+ <td style="font-weight: bold; text-align:right">7,547,858,925</td>,
+ <td style="font-weight: bold; text-align:right">7,464,022,049</td>,
+ <td style="font-weight: bold; text-align:right">7,379,797,139</td>]
+Fetching the data for the Year from the requested URL by selecting the td. The Year table is important is becasue it will be used for the merging in the further code with different dataFrames
+
+element_population_year = scraping.findAll("td")
+element_population_year[:5]
+[<td>2020</td>,
+ <td style="font-weight: bold; text-align :right">7,794,798,739</td>,
+ <td style="text-align:right">1.05 %</td>,
+ <td style="text-align:right">81,330,639</td>,
+ <td style="text-align:right">52</td>]
+Now in the further code DATA CLEANING process will be done for the population and YEAR table for better understanding.
+For the world_population we will be using .strip method for displaying the clean data.
+In below code we are going to separate the column of population of the world
+
+world_population = []
+
+element_population_no
+element_population_year
+
+
+for l in range(len(element_population_no)):
+    poplt_1 = element_population_no[l].text.strip()
+    poplt_1=poplt_1.replace(',','')                               # Replace tag been used for removing the ',' 
+    world_population.append(poplt_1)
+    
+In the code below we need to separate the YEAR table from other columns because there are many tags are available in td.
+To approach this process we will used the multi if condition for separating the YEAR column from Others.
+
+data = []
+Year = []
+
+for a in range(len(element_population_year)):
+     data.append(element_population_year[a].text.strip())
+          
+for b in range(len(data)):
+    if ',' not in data[b]:
+        if '%' not in data[b]:
+            if len(data[b]) > 2:
+                Year.append(data[b])
+Year = Year
+Year = Year[1:]
+
+# creating a data frame for scraped data and converting the data type to numeric
+
+    
+     
+df_1 = pd.DataFrame({'world_population':world_population,'Year':Year})
+df_1 = df_1.apply(pd.to_numeric)
+print(df_1.iloc[np.r_[0:5]])
+   Year  world_population
+0  2019        7713468100
+1  2018        7631091040
+2  2017        7547858925
+3  2016        7464022049
+4  2015        7379797139
+As now we have fetched the required data from the world population Website.
+This data wil be used to merged with further dataframe that we are going to create from the further Website i.e) GDP Website
+
+
+4. Now fetching the data for the Gross Domestic Product by requesting the GDP Website
+https://www.worldometers.info/gdp/
+
+
+4.1) There is research paper for the relationship between GDP and Co2 emission.
+This research explores the interaction between the GDP per capita and greenhouse gas carbon dioxide (CO2) per capita emissions to analyse the possible effect of economic development on environmental damage.
+The research is performed using cross-sectional details on 69 developed nations as well as 45 developing countries. Many studies are being tested, with various perspectives on the possible effect of economic development on environmental deterioration. All studies agree that there is a correlation between economic growth and environmental deterioration, but the effect of this link is different.
+
+Below we can see the research paper.
+
+from IPython.display import IFrame
+IFrame(src='http://www.diva-portal.org/smash/get/diva2:1076315/FULLTEXT01.pdf', width=600, height=500)
+
+Below Requesting the website for World GDP:
+
+url_population = "https://www.worldometers.info/gdp/"
+response = requests.get(url_population)
+scraping = BeautifulSoup(response.text,'lxml')
+response
+<Response [200]>
+We get the response 200, this means the website request is successfull and we can proceed with our further fetching of the data from the website.
+
+Below we use .read_html method, this method will directly fetch the entire table of GDP that is required for the Merging.
+
+scraping2 = BeautifulSoup(response.content, "lxml") 
+scraping2 = scraping2.find_all("table", "table table-striped table-bordered table-hover table-condensed table-list")# mentioning the tag where table is available and the table name
+df = pd.read_html(str(scraping2))                  
+gdp = df[0]
+gdp = gdp.iloc[:]
+gdp[0:8]
+Year	GDP Real (Inflation adj.)	GDP growth	Per Capita	GDP Nominal (Current USD)	Pop.change	World Population
+0	2017	$80,250,107,912,599	3.14%	$10,632	$80,934,771,028,340	1.12 %	7547858925
+1	2016	$77,796,772,093,915	2.51%	$10,423	$76,146,112,644,153	1.14 %	7464022049
+2	2015	$75,834,189,927,314	2.86%	$10,276	$75,037,186,502,550	1.16 %	7379797139
+3	2014	$73,725,379,037,299	2.86%	$10,106	$79,319,858,280,899	1.17 %	7295290765
+4	2013	$71,687,932,799,352	2.62%	$9,942	$77,218,621,016,248	1.19 %	7210581976
+5	2012	$69,835,075,997,485	2.51%	$9,800	$75,061,410,005,884	1.20 %	7125828059
+6	2011	$68,117,537,705,699	3.18%	$9,674	$73,367,916,052,190	1.21 %	7041194301
+7	2010	$66,036,387,107,063	4.32%	$9,492	$66,036,387,107,063	1.22 %	6956823603
+type(gdp)
+pandas.core.frame.DataFrame
+
+4.2) Data wrangling of Gdp table
+Renaming the columns and dropping the unwanted coumns for better understanding and for easy Implementation.
+
+gdp.rename(columns ={'GDP Real (Inflation adj.)':'GDP_world', 'GDP growth':'gdp_growth', 'Per Capita': 'gdp_per_capita'},  inplace = True)        # rename the columns
+gdp.drop(['GDP Nominal (Current USD)', 'Pop.change', 'World Population'],  axis = 1, inplace = True)   # delete the mentioned columns
+gdp.head()
+Year	GDP_world	gdp_growth	gdp_per_capita
+0	2017	$80,250,107,912,599	3.14%	$10,632
+1	2016	$77,796,772,093,915	2.51%	$10,423
+2	2015	$75,834,189,927,314	2.86%	$10,276
+3	2014	$73,725,379,037,299	2.86%	$10,106
+4	2013	$71,687,932,799,352	2.62%	$9,942
+As per the above code we get the require data for GDP that can be used for merging and for further implementation
+
+Now fetching the data for the co2 emission of the world by requesting the Co2 emission Website
+<b>https://www.worldometers.info/co2-emissions/<b>
+
+5. Fetching the Data for the Co2 Emission
+https://www.worldometers.info/co2-emissions/
+From this Website we are going to fetch the co2 emisiion in tons and required columns for the entire world according to the years mentioned.
+
+Below Requesting the website for Co2 Emission :
+
+url_co2 = "https://www.worldometers.info/co2-emissions/"
+response = requests.get(url_co2)
+scraping1 = BeautifulSoup(response.text,'lxml')
+response
+<Response [200]>
+We get the response 200, this means the website request is successfull and we can proceed with our further fetching of the data from the website.a
+
+Below we use .read_html method, this method will directly fetch the entire table of GDP that is required for the Merging.
+
+scraping1 = BeautifulSoup(response.content, "lxml") 
+scraping1 = scraping1.find_all("div", "table-responsive") # mentioning table name for fetching the table from the website.
+df = pd.read_html(str(scraping1))                             
+co2_emission = df[0]
+co2_emission = co2_emission.iloc[:]
+co2_emission.head()
+Year	Fossil CO2 Emissions (tons)	CO2 emisions change	CO2 emissions per capita	Population	Pop. change
+0	2016	35753305000	0.34%	4.79	7464022049	1.14 %
+1	2015	35631078000	-0.16%	4.83	7379797139	1.16 %
+2	2014	35686780000	0.76%	4.89	7295290765	1.17 %
+3	2013	35416599000	1.80%	4.91	7210581976	1.19 %
+4	2012	34790564000	0.61%	4.88	7125828059	1.20 %
+Now we have fetch the table from the website, we will apply the process of Data Wrangling for cleaning the data and making data easier to understand and in more readable format .
+
+
+5.1) Data wrangling of co2 emission table
+Renaming the columns and dropping the unwanted coumns for better understanding and for easy Implementation.
+
+co2_emission.rename(columns ={'Fossil CO2 Emissions (tons)':'co2_emission_tons', 'CO2 emisions change':'co2_percentile', 'CO2 emissions per capita': 'co2_percapita'}, inplace = True)
+co2_emission.drop(['Population' , 'Pop. change', 'co2_percentile'],  axis = 1, inplace = True)
+co2_emission.head()
+Year	co2_emission_tons	co2_percapita
+0	2016	35753305000	4.79
+1	2015	35631078000	4.83
+2	2014	35686780000	4.89
+3	2013	35416599000	4.91
+4	2012	34790564000	4.88
+Now we have the required data for co2 emission which can be used for merging with the world population and world Gross Domestic product table.
+Now we have all the required data from population, GDP and co2 emission table, now we can perform the merge process in which we will merge the three dataframes in one for further visualization and regression process.
+Further now we can proceed the Merging process.
+
+
+6. Merging the dataframes.
+Firstly we will be merging the population and GDP dataframe into one dataframe.
+merging = population.merge(GDP table)
+we will be merging on the basis of the 'Year' column which is the common column for all the dataframes.
+
+gdp_poplt = df_1.merge(gdp)                             # merging the population dataframe with the gdp dataframe
+
+gdp_poplt['Year'] = gdp_poplt['Year']
+
+print(gdp_poplt[ :5])
+
+print('Population and Gdp dataframe Merged into one Dataframe')
+   Year  world_population            GDP_world gdp_growth gdp_per_capita
+0  2017        7547858925  $80,250,107,912,599      3.14%        $10,632
+1  2016        7464022049  $77,796,772,093,915      2.51%        $10,423
+2  2015        7379797139  $75,834,189,927,314      2.86%        $10,276
+3  2014        7295290765  $73,725,379,037,299      2.86%        $10,106
+4  2013        7210581976  $71,687,932,799,352      2.62%         $9,942
+Population and Gdp dataframe Merged into one Dataframe
+gdp_poplt.head()
+Year	world_population	GDP_world	gdp_growth	gdp_per_capita
+0	2017	7547858925	$80,250,107,912,599	3.14%	$10,632
+1	2016	7464022049	$77,796,772,093,915	2.51%	$10,423
+2	2015	7379797139	$75,834,189,927,314	2.86%	$10,276
+3	2014	7295290765	$73,725,379,037,299	2.86%	$10,106
+4	2013	7210581976	$71,687,932,799,352	2.62%	$9,942
+Now we will be merging the dataframe that we get from previous merging (population and GDP dataframe on the basis of the 'Year'column) with the co2 emission dataframe.
+merging2 = gdp_poplt.merge(co2 emission table)
+This dataframe will also display the element according to the 'Year' column
+
+final_table = gdp_poplt.merge(co2_emission)
+
+final_table['Year'] = final_table['Year']
+
+print(final_table[ :5])
+
+print('[Population and Gdp]dataframe Merged with co2 emission dataframe')
+   Year  world_population            GDP_world gdp_growth gdp_per_capita  \
+0  2016        7464022049  $77,796,772,093,915      2.51%        $10,423   
+1  2015        7379797139  $75,834,189,927,314      2.86%        $10,276   
+2  2014        7295290765  $73,725,379,037,299      2.86%        $10,106   
+3  2013        7210581976  $71,687,932,799,352      2.62%         $9,942   
+4  2012        7125828059  $69,835,075,997,485      2.51%         $9,800   
+
+   co2_emission_tons  co2_percapita  
+0        35753305000           4.79  
+1        35631078000           4.83  
+2        35686780000           4.89  
+3        35416599000           4.91  
+4        34790564000           4.88  
+[Population and Gdp]dataframe Merged with co2 emission dataframe
+final_table.head()
+Year	world_population	GDP_world	gdp_growth	gdp_per_capita	co2_emission_tons	co2_percapita
+0	2016	7464022049	$77,796,772,093,915	2.51%	$10,423	35753305000	4.79
+1	2015	7379797139	$75,834,189,927,314	2.86%	$10,276	35631078000	4.83
+2	2014	7295290765	$73,725,379,037,299	2.86%	$10,106	35686780000	4.89
+3	2013	7210581976	$71,687,932,799,352	2.62%	$9,942	35416599000	4.91
+4	2012	7125828059	$69,835,075,997,485	2.51%	$9,800	34790564000	4.88
+
+7. Applying the regex function
+Applying the regex function in the final dataframe for Cleaning the data
+
+f = final_table.replace('%', '', regex = True) 
+final = f.replace(',', '', regex = True) 
+
+final['GDP_world'] = final['GDP_world'].str.replace(r'\D', '').astype(float)                      ###  Removing $ from column
+final['gdp_per_capita'] = final['gdp_per_capita'].str.replace(r'\D', '').astype(float)                ###  Removing $ from column
+final.head()
+Year	world_population	GDP_world	gdp_growth	gdp_per_capita	co2_emission_tons	co2_percapita
+0	2016	7464022049	7.779677e+13	2.51	10423.0	35753305000	4.79
+1	2015	7379797139	7.583419e+13	2.86	10276.0	35631078000	4.83
+2	2014	7295290765	7.372538e+13	2.86	10106.0	35686780000	4.89
+3	2013	7210581976	7.168793e+13	2.62	9942.0	35416599000	4.91
+4	2012	7125828059	6.983508e+13	2.51	9800.0	34790564000	4.88
+
+8. Final Dataframe.
+Below Dataframe is the Final dataframe i.e) final
+We are going to visualize this dataframe and perform some Regression on this Dataframe.
+
+final.head()
+Year	world_population	GDP_world	gdp_growth	gdp_per_capita	co2_emission_tons	co2_percapita
+0	2016	7464022049	7.779677e+13	2.51	10423.0	35753305000	4.79
+1	2015	7379797139	7.583419e+13	2.86	10276.0	35631078000	4.83
+2	2014	7295290765	7.372538e+13	2.86	10106.0	35686780000	4.89
+3	2013	7210581976	7.168793e+13	2.62	9942.0	35416599000	4.91
+4	2012	7125828059	6.983508e+13	2.51	9800.0	34790564000	4.88
+final.describe()
+Year	world_population	GDP_world	gdp_per_capita	co2_emission_tons	co2_percapita
+count	46.000000	4.600000e+01	4.600000e+01	46.000000	4.600000e+01	46.000000
+mean	1993.500000	5.599911e+09	4.408952e+13	7588.260870	2.467770e+10	4.376087
+std	13.422618	1.109103e+09	1.706532e+13	1490.774362	6.070025e+09	0.277236
+min	1971.000000	3.775760e+09	1.996760e+13	5288.000000	1.567974e+10	4.040000
+25%	1982.250000	4.637932e+09	2.876865e+13	6269.750000	1.982904e+10	4.150000
+50%	1993.500000	5.622374e+09	4.045088e+13	7194.500000	2.278165e+10	4.270000
+75%	2004.750000	6.521720e+09	5.769469e+13	8846.000000	2.950908e+10	4.565000
+max	2016.000000	7.464022e+09	7.779677e+13	10423.000000	3.575330e+10	4.910000
+
+9. Visualizations:
+Performing some Visualization on the dataframes data.
+grouped = final.groupby('co2_percapita')
+result = grouped.agg(['sum','count','mean','median','min','max'])
+
+math_co2 = grouped.count()
+math_co2['gdp_per_capita'].head(5).plot (kind = 'pie', rot=0, subplots=True, figsize=(5, 5), title="co2 emission")
+
+result.head()
+Year	world_population	...	gdp_per_capita	co2_emission_tons
+sum	count	mean	median	min	max	sum	count	mean	median	...	mean	median	min	max	sum	count	mean	median	min	max
+co2_percapita																					
+4.04	1994	1	1994.0	1994.0	1994	1994	5663150427	1	5.663150e+09	5.663150e+09	...	7249.0	7249.0	7249.0	7249.0	22898963000	1	2.289896e+10	22898963000	22898963000	22898963000
+4.06	1993	1	1993.0	1993.0	1993	1993	5581597546	1	5.581598e+09	5.581598e+09	...	7140.0	7140.0	7140.0	7140.0	22664346000	1	2.266435e+10	22664346000	22664346000	22664346000
+4.08	1999	1	1999.0	1999.0	1999	1999	6064239055	1	6.064239e+09	6.064239e+09	...	7919.0	7919.0	7919.0	7919.0	24733708000	1	2.473371e+10	24733708000	24733708000	24733708000
+4.09	1992	1	1992.0	1992.0	1992	1992	5498919809	1	5.498920e+09	5.498920e+09	...	7137.0	7137.0	7137.0	7137.0	22488598000	1	2.248860e+10	22488598000	22488598000	22488598000
+4.10	1998	1	1998.0	1998.0	1998	1998	5984793942	1	5.984794e+09	5.984794e+09	...	7771.0	7771.0	7771.0	7771.0	24541647000	1	2.454165e+10	24541647000	24541647000	24541647000
+5 rows × 30 columns
+
+
+rcParams['font.size'] = 15
+rcParams['xtick.labelsize'] = 15
+rcParams['ytick.labelsize'] = 15
+final.groupby('co2_emission_tons').mean()['GDP_world'].plot (kind = 'line', label='co2', figsize=(16, 5), title = 'co2 emission because of GDP')
+plt.legend ()
+<matplotlib.legend.Legend at 0xf571da0>
+
+sns.set(style="ticks")
+sns.pairplot(final, diag_kind='kde')
+<seaborn.axisgrid.PairGrid at 0xe90bc88>
+
+
+10. Performing the various Regression Functions:
+10.1) Linear Regression
+
+10.2) Multilinear Regression
+
+10.3) polynomial Regression
+
+10.4) Knn Regression
+
+#rcParams['figure.dpi'] = 180
+rcParams['lines.linewidth'] = 2
+#rcParams['axes.facecolor'] = 'white'
+#cParams['patch.edgecolor'] = 'white'                                                  # Applying rc param for clear and visualizable graph.
+rcParams['figure.figsize'] = 20,5
+rcParams['font.size'] = 15
+rcParams['xtick.labelsize'] = 15
+rcParams['ytick.labelsize'] = 15
+rcParams['figure.dpi'] = 200
+rcParams['lines.linewidth'] = 0.5
+
+10. 1) Linear Regression
+Performing Linear regression for predicting co2 emission from World Population And GDP of World
+
+## Poltting linear Regression for co2 emission from world population
+
+import statsmodels.formula.api as smf
+from statsmodels.sandbox.regression.predstd import wls_prediction_std
+
+mod = smf.ols(formula="Q('co2_emission_tons') ~ 1+ world_population", data=final).fit()
+print(mod.params)
+print("R^2 Score =", mod.rsquared)
+
+#confidence = 95% (alpha=0.05)
+sdev, lower, upper = wls_prediction_std(mod, alpha=0.05)
+
+plt.scatter(final['world_population'], final['co2_emission_tons'], s=20, alpha=0.6)
+plt.plot(final['world_population'], mod.predict(final['world_population']), label='Linear $R^2$=%.2f' % mod.rsquared, alpha=0.5)
+plt.fill_between(final['world_population'], lower, upper, color='Grey', alpha=0.1)
+#plt.plot(label='Linear $R^2$=%.2f' % mod.rsquared, alpha=0.9)
+
+plt.xlabel('World population', fontdict={'fontsize':15})
+plt.ylabel('co2 emission', fontdict={'fontsize':15})
+plt.legend(loc='upper left', framealpha=0.4, prop={'size':'medium'})
+plt.title('Predicting co2 emission on basis of Population', fontdict={'fontsize':15}, pad=20)
+#plt.figure(figsize=(2,2))
+
+plt.show()
+mod.summary()
+
+#plt.subplots_adjust( hspace=1)
+
+## Poltting linear Regression for co2 emission from GDP World.
+
+import statsmodels.formula.api as smf
+from statsmodels.sandbox.regression.predstd import wls_prediction_std
+
+mod = smf.ols(formula="Q('co2_emission_tons') ~ 1+ GDP_world", data=final).fit()
+print(mod.params)
+print("R^2 Score =", mod.rsquared)
+
+#confidence = 95% (alpha=0.05)
+sdev, lower, upper = wls_prediction_std(mod, alpha=0.05)
+
+plt.scatter(final['GDP_world'], final['co2_emission_tons'], s=20, alpha=0.6)
+plt.plot(final['GDP_world'], mod.predict(final['GDP_world']), label='Linear $R^2$=%.2f' % mod.rsquared, alpha=0.5)
+plt.fill_between(final['GDP_world'], lower, upper, color='Grey', alpha=0.1)
+#plt.plot(label='Linear $R^2$=%.2f' % mod.rsquared, alpha=0.9)
+
+plt.xlabel('GDP', fontdict={'fontsize':15})
+plt.ylabel('co2 emission', fontdict={'fontsize':15})
+plt.legend(loc='upper left', framealpha=0.4, prop={'size':'medium'})
+plt.title('Predicting co2 emission on basis of GDP', fontdict={'fontsize':15}, pad=20)
+#plt.figure(figsize=(10,5))
+
+plt.show()
+Intercept          -5.067404e+09
+world_population    5.311710e+00
+dtype: float64
+('R^2 Score =', 0.9419574213355919)
+
+Intercept    9.097704e+09
+GDP_world    3.533718e-04
+dtype: float64
+('R^2 Score =', 0.986987830032012)
+
+
+10.2) Multilinear regression
+features = ['world_population', 'GDP_world']
+X = final[features]
+y = final['co2_emission_tons']
+
+
+mod5 = smf.ols(formula="Q('co2_emission_tons') ~ world_population + GDP_world", data=final).fit()
+print(mod5.params)
+print("R^2 Score =", mod5.rsquared)
+predict_co2_emission_tons = mod5.predict(X)
+plt.scatter(final.index, final['co2_emission_tons'], s=20, alpha=0.6)
+plt.plot(final.index, predict_co2_emission_tons, 'r-',  label='Linear $R^2$=%.2f' % mod5.rsquared, alpha=0.5)
+
+
+plt.xlabel('GDP and population', fontdict={'fontsize':15})
+plt.ylabel('co2 emission', fontdict={'fontsize':15})
+plt.legend(loc='upper right', framealpha=0.5, prop={'size':'medium'})
+plt.title('co2 emission on basis of population and GDP', fontdict={'fontsize':15}, pad=15)
+
+plt.show()
+mod5.summary()
+Intercept           1.538365e+10
+world_population   -2.268793e+00
+GDP_world           4.989641e-04
+dtype: float64
+('R^2 Score =', 0.991296649358073)
+
+OLS Regression Results
+Dep. Variable:	Q('co2_emission_tons')	R-squared:	0.991
+Model:	OLS	Adj. R-squared:	0.991
+Method:	Least Squares	F-statistic:	2449.
+Date:	Mon, 20 Apr 2020	Prob (F-statistic):	5.05e-45
+Time:	20:01:10	Log-Likelihood:	-991.88
+No. Observations:	46	AIC:	1990.
+Df Residuals:	43	BIC:	1995.
+Df Model:	2		
+Covariance Type:	nonrobust		
+coef	std err	t	P>|t|	[0.025	0.975]
+Intercept	1.538e+10	1.38e+09	11.122	0.000	1.26e+10	1.82e+10
+world_population	-2.2688	0.492	-4.614	0.000	-3.260	-1.277
+GDP_world	0.0005	3.2e-05	15.613	0.000	0.000	0.001
+Omnibus:	2.087	Durbin-Watson:	0.323
+Prob(Omnibus):	0.352	Jarque-Bera (JB):	1.385
+Skew:	-0.415	Prob(JB):	0.500
+Kurtosis:	3.186	Cond. No.	7.65e+14
+
+
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 7.65e+14. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+10.3) Polynomial Regression
+rcParams['font.size'] = 10
+rcParams['xtick.labelsize'] = 5
+rcParams['ytick.labelsize'] = 5
+
+x = final[['GDP_world','world_population']]
+y= final['co2_emission_tons']
+
+wgc = smf.ols(formula='co2_emission_tons ~ 1 + world_population + GDP_world', data=final).fit()
+
+
+X = pd.DataFrame({'world_population': np.linspace(final.world_population.min(), final.world_population.max(), len(final.world_population))})
+plt.figure(figsize=(5,5))
+plt.scatter(final.world_population, final.co2_emission_tons, color='Grey',s=80, alpha=0.6)
+plt.xlabel('population', fontdict={'fontsize':10}); plt.ylabel('co2 emission', fontdict={'fontsize':10})
+
+plt.plot(X, wgc.predict(x), 'b-', label='Linear $R^2$=%.2f' % mod.rsquared, alpha=0.4)
+
+plt.legend(loc='upper center', framealpha=0.5, prop={'size':'small'})
+plt.title("Predicting co2 emission based on  World Population", fontdict={'fontsize':10})
+plt.show()
+mod.summary()
+
+OLS Regression Results
+Dep. Variable:	Q('co2_emission_tons')	R-squared:	0.987
+Model:	OLS	Adj. R-squared:	0.987
+Method:	Least Squares	F-statistic:	3337.
+Date:	Mon, 20 Apr 2020	Prob (F-statistic):	3.95e-43
+Time:	20:01:10	Log-Likelihood:	-1001.1
+No. Observations:	46	AIC:	2006.
+Df Residuals:	44	BIC:	2010.
+Df Model:	1		
+Covariance Type:	nonrobust		
+coef	std err	t	P>|t|	[0.025	0.975]
+Intercept	9.098e+09	2.89e+08	31.505	0.000	8.52e+09	9.68e+09
+GDP_world	0.0004	6.12e-06	57.771	0.000	0.000	0.000
+Omnibus:	0.338	Durbin-Watson:	0.232
+Prob(Omnibus):	0.845	Jarque-Bera (JB):	0.509
+Skew:	0.017	Prob(JB):	0.775
+Kurtosis:	2.486	Cond. No.	1.32e+14
+
+
+Warnings:
+[1] Standard Errors assume that the covariance matrix of the errors is correctly specified.
+[2] The condition number is large, 1.32e+14. This might indicate that there are
+strong multicollinearity or other numerical problems.
+
+10.4) KNN regression
+performing distance and uniform model
+
+import re
+from sklearn import neighbors
+rcParams['figure.figsize'] = 5, 5
+rcParams['font.size'] = 7
+rcParams['figure.dpi'] = 200
+rcParams['lines.linewidth'] = 0.5
+rcParams['axes.facecolor'] = 'white'
+rcParams['patch.edgecolor'] = 'white'
+rcParams['font.family'] = 'StixGeneral'
+x = final.GDP_world.values
+x = np.reshape(x,(len(final.GDP_world),1))
+y = final.co2_emission_tons.values
+y = np.reshape(y,(len(final.co2_emission_tons),1))
+print len(x)
+print len(y)
+46
+46
+# Plotting Knn regression model graph
+x_co2 = np.linspace(1900,2000,500)[:, np.newaxis]
+n_neighbors = 5
+
+
+for i, weights in enumerate(['uniform', 'distance']):
+    knn = neighbors.KNeighborsRegressor(n_neighbors, weights=weights)
+    y_hat = knn.fit(x, y).predict(x)
+    
+    plt.subplot(2, 1, i + 1)
+    plt.scatter(x, y, c='Blue', label='data', alpha = 0.4)
+    plt.plot(x, y_hat, c='Red', label='prediction', alpha = 0.8)
+    plt.axis('tight')
+    plt.xlabel('Gdp world')
+    plt.ylabel('co2 emission')
+    plt.legend(loc='upper left')
+    plt.title("KNeighborsRegressor (k = %i, weights = '%s')" % (n_neighbors, weights))
+    plt.subplots_adjust( hspace=0.5)
+    
+plt.show()
+
+
+Conclusion:
+In this notebook we applied many function starting from scratching the several websites to merging the Dataframes and applying functions like Regex and Data Wrangling for getting Clean data and in more understandable way. After creating the Final Dataframe we perform some regression functions on the final dataframe, In which we try to predict the co2 emission from world population and Gdp Growth of the world.
+In linear regression we get result for population and GDp in which it shows the higher co2 emission for Gdp rather than Population by assuming the value of the R^2.
+While for Polynomial it is quite difficult to undertand the graph.
+Co2 emission is one of the biggest concern these days, solution after these to control the population which can lead to gdp control, less industrial construction, less automobiles and there are many more things. If some of these can come under control then the co2 emisssion will decrease followed by Global Warming.
+
+ 
